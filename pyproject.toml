@@ -1,0 +1,32 @@
+[project]
+name = "habit-tracker"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django (>=6.0,<7.0)",
+    "python-dotenv (>=1.2.1,<2.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "habit_tracker", from = "src"}]
+
+
+[tool.poetry.group.lint.dependencies]
+flake8 = "^7.3.0"
+isort = "^7.0.0"
+mypy = "^1.19.1"
+black = "^25.12.0"
+
+
+[tool.poetry.group.dev.dependencies]
+requests = "^2.32.5"
+flake8 = "^7.3.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
