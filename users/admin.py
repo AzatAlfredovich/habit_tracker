@@ -11,6 +11,4 @@ class UserAdmin(admin.ModelAdmin):
         "phone_number",
     )
     list_filter = ("email",)
-    search_fields = (
-        "email",
-    )
+    search_fields = ("email",)
