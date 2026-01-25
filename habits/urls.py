@@ -21,4 +21,3 @@ urlpatterns = [
         name="habits_delete",
     ),
 ]
-
