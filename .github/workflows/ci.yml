@@ -110,6 +110,15 @@ jobs:
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           IMAGE=$(docker compose images backend --format "{{.Repository}}:{{.Tag}}")
+          if [ -z "$IMAGE" ]; then
+            echo " Ошибка: не удалось получить имя образа. Проверьте:"
+            echo "  - существование сервиса 'backend' в docker-compose.yml"
+            echo "  - успешность сборки образа"
+            exit 1
+          fi
+
+        echo "Найден образ: $IMAGE"
+          
           docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
           docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
 
