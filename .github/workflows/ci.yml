@@ -107,7 +107,7 @@ jobs:
         run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
       - name: Build Docker-compose images (docker-compose services)
-        run: docker-compose build
+        run: docker compose build
 
       - name: Push backend image
         run: |
@@ -147,7 +147,7 @@ jobs:
           
           cd /app/habit_tracker
           
-          docker-compose pull
-          docker-compose down
-          docker-compose up -d
+          docker compose pull
+          docker compose down
+          docker compose up -d
           EOF
