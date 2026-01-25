@@ -1,0 +1,153 @@
+name: Django CI HabitTracker
+
+on: [push]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8
+
+    - name: Run Flake8
+      run: flake8 .
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:15-alpine  # как в docker-compose
+        env:
+          POSTGRES_DB: ${{ secrets.DB_NAME }}  # ← должно совпадать с ${NAME} из .env
+          POSTGRES_USER: ${{ secrets.DB_USER }}  # ← должно совпадать с ${USER} из .env
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}  # ← должно совпадать с ${PASSWORD} из .env
+          POSTGRES_HOST_AUTH_METHOD: md5
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h localhost -p 5432 -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 20
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+              ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..20}; do
+          pg_isready -h localhost -p 5432 -U ${{ secrets.DB_USER }} -d ${{ secrets.DB_NAME }} && exit 0
+          echo "PostgreSQL is not ready (attempt $i/20), waiting 10 sec..."
+          sleep 10
+          done
+          exit 1
+        env:
+            PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: Run migrations
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          NAME: ${{ secrets.DB_NAME }}
+          USER: ${{ secrets.DB_USER }}
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
+          HOST: 127.0.0.1
+          PORT: "5432"
+        run: python manage.py migrate
+
+      - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          NAME: ${{ secrets.DB_NAME }}
+          USER: ${{ secrets.DB_USER }}
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
+          HOST: 127.0.0.1
+          PORT: "5432"
+        run: python manage.py test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+
+      - name: Build Docker-compose images (docker-compose services)
+        run: docker-compose build
+
+      - name: Push backend image
+        run: |
+          IMAGE=$(docker compose images backend --format "{{.Repository}}:{{.Tag}}")
+          docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
+          docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
+
+
+      - name: Push celery image
+        run: |
+          IMAGE=$(docker compose images celery --format "{{.Repository}}:{{.Tag}}")
+          docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
+          docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
+
+
+      - name: Push celery_beat image
+        run: |
+          IMAGE=$(docker compose images celery_beat --format "{{.Repository}}:{{.Tag}}")
+          docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
+          docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Deploy to Server
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          
+          cd /app/habit_tracker
+          
+          docker-compose pull
+          docker-compose down
+          docker-compose up -d
+          EOF

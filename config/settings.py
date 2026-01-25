@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -80,6 +81,14 @@ REST_FRAMEWORK = {
     ],
 }
 
+if "test" in sys.argv:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db_sqlite3",
+        }
+    }
+
 # Database
 DATABASES = {
     "default": {
@@ -158,3 +167,10 @@ CELERY_BEAT_SCHEDULE = {
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 TELEGRAM_URL = "https://api.telegram.org/bot"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+    }
+}
