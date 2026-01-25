@@ -86,13 +86,6 @@ jobs:
         run: python manage.py migrate
 
       - name: Run tests
-        env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          NAME: ${{ secrets.DB_NAME }}
-          USER: ${{ secrets.DB_USER }}
-          PASSWORD: ${{ secrets.DB_PASSWORD }}
-          HOST: 127.0.0.1
-          PORT: "5432"
         run: python manage.py test
 
   build:
@@ -110,6 +103,9 @@ jobs:
         run: docker compose build
 
       - name: Push backend image
+        env:
+          NAME: ${{ secrets.DB_NAME }}
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           IMAGE=$(docker compose images backend --format "{{.Repository}}:{{.Tag}}")
           docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
@@ -117,6 +113,9 @@ jobs:
 
 
       - name: Push celery image
+        env:
+          NAME: ${{ secrets.DB_NAME }}
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           IMAGE=$(docker compose images celery --format "{{.Repository}}:{{.Tag}}")
           docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
@@ -124,6 +123,9 @@ jobs:
 
 
       - name: Push celery_beat image
+        env:
+          NAME: ${{ secrets.DB_NAME }}
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           IMAGE=$(docker compose images celery_beat --format "{{.Repository}}:{{.Tag}}")
           docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
