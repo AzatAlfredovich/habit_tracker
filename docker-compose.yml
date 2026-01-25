@@ -27,8 +27,6 @@ services:
   backend:
     build: .
     container_name: backend
-    env_file:
-      - .env
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
@@ -45,8 +43,6 @@ services:
   celery:
     build: .
     container_name: celery
-    env_file:
-      - .env
     command: celery -A config worker -l INFO -P solo
     depends_on:
       db:
@@ -59,8 +55,6 @@ services:
   celery_beat:
     build: .
     container_name: celery_beat
-    env_file:
-      - .env
     command: celery -A config beat -l INFO
     depends_on:
       db:
