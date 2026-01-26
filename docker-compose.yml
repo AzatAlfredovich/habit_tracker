@@ -25,6 +25,7 @@ services:
       - redis_data:/data
 
   backend:
+    image: habit_tracker-backend:latest
     build: .
     container_name: backend
     command: >
@@ -41,6 +42,7 @@ services:
       - .:/app
 
   celery:
+    image: habit_tracker-celery:latest
     build: .
     container_name: celery
     command: celery -A config worker -l INFO -P solo
@@ -53,6 +55,7 @@ services:
       - .:/app
 
   celery_beat:
+    image: habit_tracker-beat:latest
     build: .
     container_name: celery_beat
     command: celery -A config beat -l INFO
