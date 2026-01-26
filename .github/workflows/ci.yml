@@ -110,8 +110,8 @@ jobs:
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           IMAGE_NAME=$(docker compose config | yq eval '.services.backend.image' -)
-          docker tag "$IMAGE_NAME" "***/habit_tracker-backend:latest"
-          docker push "***/habit_tracker-backend:latest"
+          docker tag "$IMAGE_NAME" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
+          docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
 
 
       - name: Push celery image
