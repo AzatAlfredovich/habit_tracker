@@ -149,6 +149,9 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      - name: Check out code
+        uses: actions/checkout@v3
+
       - name: Upload docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -156,7 +159,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: docker-compose.yml  # путь к файлу в репозитории
-          target: /app/
+          target: /app/habit_tracker/
 
       - name: Deploy to Server
         env:
