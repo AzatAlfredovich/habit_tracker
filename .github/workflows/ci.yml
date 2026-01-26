@@ -149,13 +149,27 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      - name: Upload docker-compose.yml to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          src: docker-compose.yml  # путь к файлу в репозитории
+          dest: /app/habit_tracker/
+
       - name: Deploy to Server
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           
-          cd /app/habit_tracker
+          export SECRET_KEY='${{ secrets.SECRET_KEY }}'
+          export DB_NAME='${{ secrets.DB_NAME }}'
+          export DB_USER='${{ secrets.DB_USER }}'
+          export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
+          export DB_HOST='${{ secrets.DB_HOST }}'
+          export TELEGRAM_TOKEN='${{ secrets.TELEGRAM_TOKEN }}'
           
           docker compose pull
           docker compose down
