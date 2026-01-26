@@ -156,7 +156,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: docker-compose.yml  # путь к файлу в репозитории
-          target: /app/habit_tracker/
+          target: /app/
 
       - name: Deploy to Server
         env:
