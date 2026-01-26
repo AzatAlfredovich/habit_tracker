@@ -104,14 +104,14 @@ jobs:
       - name: Build Docker-compose images (docker-compose services)
         run: docker compose build
 
-      - name: Push backend image
+      - name: Push backend images
         env:
           NAME: ${{ secrets.DB_NAME }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          IMAGE=$(docker compose images backend --format "{{.Repository}}:{{.Tag}}")
-          docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
-          docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
+          IMAGE_NAME=$(docker compose config | yq eval '.services.backend.image' -)
+          docker tag "$IMAGE_NAME" "***/habit_tracker-backend:latest"
+          docker push "***/habit_tracker-backend:latest"
 
 
       - name: Push celery image
@@ -119,8 +119,8 @@ jobs:
           NAME: ${{ secrets.DB_NAME }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          IMAGE=$(docker compose images celery --format "{{.Repository}}:{{.Tag}}")
-          docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
+          IMAGE_NAME=$(docker compose config | yq eval '.services.celery.image' -)
+          docker tag "$IMAGE_NAME" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
           docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
 
 
@@ -129,9 +129,15 @@ jobs:
           NAME: ${{ secrets.DB_NAME }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          IMAGE=$(docker compose images celery_beat --format "{{.Repository}}:{{.Tag}}")
-          docker tag "$IMAGE" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
+          IMAGE_NAME=$(docker compose config | yq eval '.services.celery_beat.image' -)
+          docker tag "$IMAGE_NAME" "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
           docker push "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
+
+      - name: Verify images were pushed
+        run: |
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-backend:latest"
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-celery:latest"
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/habit_tracker-beat:latest"
 
   deploy:
     needs: build
