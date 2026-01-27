@@ -67,6 +67,11 @@ services:
         condition: service_started
     volumes:
       - .:/app
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
 volumes:
   postgres_data:
