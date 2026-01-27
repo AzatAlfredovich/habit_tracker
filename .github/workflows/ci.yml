@@ -152,20 +152,23 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Upload docker-compose.yml to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: docker-compose.yml  # путь к файлу в репозитории
-          target: /app/habit_tracker/
+#      - name: Upload docker-compose.yml to server
+#        uses: appleboy/scp-action@v0.1.7
+#        with:
+#          host: ${{ secrets.SERVER_IP }}
+#          username: ${{ secrets.SSH_USER }}
+#          key: ${{ secrets.SSH_KEY }}
+#          source: docker-compose.yml  # путь к файлу в репозитории
+#          target: /app/habit_tracker/
 
       - name: Deploy to Server
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          
+          cd habit_tracker/
+          git pull
           
           export SECRET_KEY='${{ secrets.SECRET_KEY }}'
           export DB_NAME='${{ secrets.DB_NAME }}'
@@ -176,5 +179,6 @@ jobs:
           
           docker compose pull
           docker compose down
-          docker compose up -d
+          docker compose up -d --build
           EOF
+          
