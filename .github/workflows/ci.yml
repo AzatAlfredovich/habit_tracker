@@ -79,7 +79,7 @@ jobs:
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           NAME: ${{ secrets.DB_NAME }}
-          USER: ${{ secrets.DB_USER }}
+          PG_USER: ${{ secrets.DB_USER }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
           HOST: 127.0.0.1
           PORT: "5432"
