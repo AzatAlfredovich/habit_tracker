@@ -14,7 +14,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${NAME} -h localhost -p 5432 -t 5 || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 30s
 
   redis:
@@ -61,9 +61,12 @@ services:
     container_name: celery_beat
     command: celery -A config beat -l INFO
     environment:
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_DB=${NAME}
-      - POSTGRES_PASSWORD=${PASSWORD}
+        - DJANGO_SETTINGS_MODULE=config.settings  # Указываем модуль настроек
+        - DB_HOST=db                    # имя сервиса БД в Docker Compose
+        - DB_PORT=5432
+        - DB_NAME=${NAME}                # из .env
+        - DB_USER=${PG_USER}            # из .env
+        - DB_PASSWORD=${PASSWORD}
     depends_on:
       db:
         condition: service_healthy
