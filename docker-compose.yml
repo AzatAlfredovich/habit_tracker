@@ -1,0 +1,96 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_DB=${NAME}
+      - POSTGRES_PASSWORD=${PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${NAME} -h localhost -p 5432 -t 5 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    image: habit_tracker-backend:latest
+    build: .
+    container_name: backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - DB_HOST=db                    # имя сервиса БД в Docker Compose
+      - DB_PORT=5432
+      - DB_NAME=${NAME}                # из .env
+      - DB_USER=${PG_USER}            # из .env
+      - DB_PASSWORD=${PASSWORD}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+
+  celery:
+    image: habit_tracker-celery:latest
+    build: .
+    container_name: celery
+    command: celery -A config worker -l INFO -P solo
+    environment:
+      - DB_HOST=db                    # имя сервиса БД в Docker Compose
+      - DB_PORT=5432
+      - DB_NAME=${NAME}                # из .env
+      - DB_USER=${PG_USER}            # из .env
+      - DB_PASSWORD=${PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+
+  celery_beat:
+    image: habit_tracker-beat:latest
+    build: .
+    container_name: celery_beat
+    command: celery -A config beat -l INFO
+    environment:
+        - DB_HOST=db                    # имя сервиса БД в Docker Compose
+        - DB_PORT=5432
+        - DB_NAME=${NAME}                # из .env
+        - DB_USER=${PG_USER}            # из .env
+        - DB_PASSWORD=${PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  redis_data:

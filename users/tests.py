@@ -113,6 +113,7 @@ class UserRegistrationAPITest(APITestCase):
         # Проверяем валидность пароля
         self.assertTrue(user.check_password("admin0000"))
 
+
 class IsOwnerPermissionSimpleTest(APITestCase):
     def setUp(self):
         # Создаём двух пользователей
